@@ -11,7 +11,7 @@ Working é um sistema de gerenciamento de registros de entrada e saída, criado 
 - [Redis](https://redis.io/)
 
 ## Requisitos
-- [PHP]()
+- [PHP](https://www.php.net/)
 - [Composer](https://getcomposer.org/)
 - [Docker](https://docs.docker.com/get-docker/)
 
@@ -19,7 +19,7 @@ Working é um sistema de gerenciamento de registros de entrada e saída, criado 
 Siga os passos abaixo para configurar o ambiente de desenvolvimento:
 
 ### 1) Clonar o Repositório
-- git clone https://github.com/CWillwohl/working
+- git clone https://github.com/CWillwohl/project-working
 - cd working
 
 ### 2) Instalar Dependências
