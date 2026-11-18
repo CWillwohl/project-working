@@ -13,9 +13,6 @@ class ManageReceivementsFilter extends Component
     #[Validate(as: 'data final')]
     public ?string $dateEnd = null;
 
-    #[Validate('nullable|boolean', as: 'status')]
-    public ?int $received = null;
-
     public function filterData(): void
     {
         $this->validate();
@@ -23,8 +20,18 @@ class ManageReceivementsFilter extends Component
         $this->dispatch('manage-receivements::filter-data', [
             'dateStart' => $this->dateStart,
             'dateEnd'   => $this->dateEnd,
-            'received'  => $this->received,
         ]);
+    }
+
+    public function preset(int $days): void
+    {
+        if (!in_array($days, [7, 15, 30], true)) {
+            return;
+        }
+
+        $this->dateEnd   = now()->toDateString();
+        $this->dateStart = now()->subDays($days - 1)->toDateString();
+        $this->filterData();
     }
 
     public function render()

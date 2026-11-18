@@ -20,7 +20,7 @@ class ManageReceivements extends Component
 
     public ?string $dateEnd = null;
 
-    public ?int $received = null;
+    public ?int $received = 0;
 
     public ?bool $selectAll = false;
 
@@ -29,6 +29,7 @@ class ManageReceivements extends Component
     public function mount(Project $project): void
     {
         $this->project = $project;
+        $this->refreshSelection();
     }
 
     #[On('manage-receivements::filter-data')]
@@ -36,27 +37,42 @@ class ManageReceivements extends Component
     {
         $this->dateStart = $data['dateStart'];
         $this->dateEnd   = $data['dateEnd'];
-        $this->received  = $data['received'];
-
-        $this->render();
+        $this->resetPage();
+        $this->refreshSelection();
     }
 
     #[On('manage-receivements::updated-elements')]
     public function onUpdatedElements(): void
     {
-        $this->selectedWorkedPeriods = [];
-        $this->selectAll             = false;
-
-        $this->render();
+        $this->refreshSelection();
     }
 
     public function selectProject(Project $project): void
     {
         $this->project               = $project;
-        $this->selectAll             = false;
-        $this->selectedWorkedPeriods = [];
+        $this->resetPage();
+        $this->refreshSelection();
 
         $this->dispatch('manage-receivements::change-project', $project);
+    }
+
+    public function filterStatus(int $status): void
+    {
+        abort_unless(in_array($status, [0, 1], true), 422);
+        $this->received = $status;
+        $this->resetPage();
+        $this->refreshSelection();
+    }
+
+    public function updatedSelectedWorkedPeriods(): void
+    {
+        $this->selectAll = false;
+    }
+
+    private function refreshSelection(): void
+    {
+        $this->selectAll = $this->received === 0;
+        $this->selectAllElements();
     }
 
     public function openModal(string $type): void

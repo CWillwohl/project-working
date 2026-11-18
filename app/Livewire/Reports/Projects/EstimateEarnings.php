@@ -102,7 +102,20 @@ class EstimateEarnings extends Component
         $this->periodValidator()->validate();
 
         $pdf = Pdf::loadView('pdf.project-earnings-estimate', ['estimate' => $this->estimate])
-            ->setPaper('a4', 'portrait');
+            ->setPaper('a4', 'portrait')
+            ->setOption('isFontSubsettingEnabled', true);
+
+        $pdf->render();
+        $dompdf = $pdf->getDomPDF();
+        $canvas = $dompdf->getCanvas();
+        $canvas->page_text(
+            $canvas->get_width() - 110,
+            $canvas->get_height() - 29,
+            'Página {PAGE_NUM} / {PAGE_COUNT}',
+            $dompdf->getFontMetrics()->getFont('DejaVu Sans'),
+            8,
+            [0.29, 0.33, 0.42],
+        );
 
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->output();

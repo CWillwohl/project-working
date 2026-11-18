@@ -6,11 +6,9 @@
     <div tabindex="0" class="fixed top-0 left-0 z-50 w-48 gap-4 p-4 shadow dropdown-content menu bg-base-100 rounded-box md:w-96">
         <x-input error label labelText="Data inicial:" wire:model="dateStart" name="dateStart" type="date" placeholder="Pesquisar por projeto" class="w-full" />
         <x-input error label labelText="Data final:" wire:model="dateEnd" name="dateEnd" type="date" placeholder="Pesquisar por projeto" />
-        <x-select error label labelText="Status:" wire:model="received" name="received">
-            <option value="">Todos</option>
-            <option value="0">Pendente</option>
-            <option value="1">Recebido</option>
-        </x-select>
+        <button type="button" class="btn btn-sm btn-outline" wire:click="preset(7)">Última semana</button>
+        <button type="button" class="btn btn-sm btn-outline" wire:click="preset(15)">Últimos 15 dias</button>
+        <button type="button" class="btn btn-sm btn-outline" wire:click="preset(30)">Último mês</button>
         <button class="text-white btn btn-primary" wire:click="filterData">Filtrar</button>
     </div>
 </div>

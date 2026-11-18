@@ -5,7 +5,11 @@
             <x-select-project :projects="$projects" :project="$project" />
 
             <div class="flex flex-col justify-between w-full gap-4 mt-8 xl:flex-row">
-                <livewire:reports.projects.components.manage-receivements-filter />
+                <div class="flex flex-wrap items-center gap-2">
+                    <livewire:reports.projects.components.manage-receivements-filter />
+                    <button type="button" wire:click="filterStatus(0)" aria-pressed="{{ $received === 0 ? 'true' : 'false' }}" class="btn {{ $received === 0 ? 'btn-primary' : 'btn-outline' }}">Pendente</button>
+                    <button type="button" wire:click="filterStatus(1)" aria-pressed="{{ $received === 1 ? 'true' : 'false' }}" class="btn {{ $received === 1 ? 'btn-primary' : 'btn-outline' }}">Recebido</button>
+                </div>
                 <x-manage-receivements-options />
             </div>
             <form action="" wire:submit.prevent>
@@ -26,7 +30,7 @@
                             <tr wire:key="{{ $item->id }}" class="border-b @if($index % 2 !== 0) bg-slate-50 @endif">
                                 <td class="p-4 text-base">
                                     @if($item->punch_out_id)
-                                        <input wire:model="selectedWorkedPeriods" type="checkbox" class="checkbox checkbox-primary worked-period-element" value="{{ $item->id }}" onclick="manageOptionsVisibility()" />
+                                        <input wire:model="selectedWorkedPeriods" type="checkbox" class="checkbox checkbox-primary worked-period-element" value="{{ $item->id }}" />
                                     @else
                                         <div class="tooltip tooltip-right" data-tip="Não é possivel selecionar um periodo que ainda não foi completado">
                                             <i class="text-2xl text-center fa-solid fa-circle-info text-info"></i>
