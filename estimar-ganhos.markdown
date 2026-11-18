@@ -6,7 +6,7 @@
 - [x] Adicionar a configuração expansível e remover o card de projeções fixas.
 - [x] Gerar o PDF com os mesmos dados da tela.
 - [x] Verificar cálculo, persistência, autorização, PDF e estados da interface.
-- [ ] Publicar a branch e abrir o PR.
+- [x] Publicar a branch e abrir o [PR #2](https://github.com/CWillwohl/project-working/pull/2).
 
 ## Verificação
 
