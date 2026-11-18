@@ -6,6 +6,7 @@ use App\Actions\Auth\SendPasswordRecoveryMailAction;
 use Illuminate\View\View;
 use Livewire\Attributes\Rule;
 use Livewire\Component;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class PasswordRecover extends Component
 {
@@ -24,7 +25,14 @@ class PasswordRecover extends Component
     {
         $this->validate();
 
-        ((new SendPasswordRecoveryMailAction($this->email))->execute());
+        try {
+            (new SendPasswordRecoveryMailAction($this->email))->execute();
+        } catch (TransportExceptionInterface $exception) {
+            report($exception);
+            $this->addError('email', 'Não foi possível enviar o e-mail de recuperação. Tente novamente mais tarde.');
+
+            return;
+        }
 
         $this->sended = true;
     }

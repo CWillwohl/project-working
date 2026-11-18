@@ -8,7 +8,6 @@ Working é um sistema de gerenciamento de registros de entrada e saída, criado 
 - [TailwindCSS](https://tailwindcss.com/)
 - [DaisyUI](https://daisyui.com/)
 - [MySQL](https://www.mysql.com/)
-- [Redis](https://redis.io/)
 
 ## Requisitos
 - [Docker](https://docs.docker.com/get-docker/) com o plugin [Docker Compose](https://docs.docker.com/compose/) (v2)
@@ -16,66 +15,53 @@ Working é um sistema de gerenciamento de registros de entrada e saída, criado 
 Não é necessário ter PHP, Composer ou Node instalados na máquina: tudo roda dentro dos containers.
 
 ## Ambiente Docker
-| Serviço   | Descrição                                                        | Acesso                  |
-|-----------|------------------------------------------------------------------|-------------------------|
-| `nginx`   | Servidor web                                                     | http://localhost:8000   |
-| `app`     | PHP 8.2 (FPM) com as extensões do projeto, Composer e Xdebug     | -                       |
-| `queue`   | Worker das filas (`php artisan queue:listen`)                    | -                       |
-| `vite`    | Servidor de desenvolvimento do Vite (hot reload dos assets)      | http://localhost:5173   |
-| `mysql`   | MySQL 8.4 (bancos `working` e `testing`)                         | `localhost:3306`        |
-| `redis`   | Redis, utilizado como gerenciador de filas                       | `localhost:6379`        |
-| `mailpit` | Caixa de e-mails local (captura os e-mails enviados pelo sistema) | http://localhost:8025   |
 
-As portas podem ser alteradas no `.env` (`APP_PORT`, `VITE_PORT`, `FORWARD_DB_PORT`, `FORWARD_REDIS_PORT`, `FORWARD_MAILPIT_DASHBOARD_PORT`).
+| Serviço | Função | Acesso |
+|---|---|---|
+| `app` | PHP 8.2 com Apache, Composer e Xdebug | http://localhost:8000 |
+| `mysql` | MySQL 8.4, com os bancos `working` e `testing` | localhost:3306 |
+
+O Docker usa Node para compilar os assets durante o build da imagem. O registro de ponto, o cálculo do período, a atualização do saldo e a recuperação de senha são executados durante a requisição.
 
 ## Instalação
-Siga os passos abaixo para configurar o ambiente de desenvolvimento:
 
-### 1) Clonar o Repositório
-- git clone https://github.com/CWillwohl/project-working
-- cd project-working
+~~~bash
+git clone https://github.com/CWillwohl/project-working
+cd project-working
+cp .env.dev .env
+docker compose up -d --build
+~~~
 
-### 2) Configurar o arquivo .env
-Copie o arquivo de exemplo para desenvolvimento:
+Acesse http://localhost:8000 quando o container `app` concluir a instalação das dependências PHP, a geração da chave e as migrations. Use `docker compose logs -f app` para acompanhar. Ajuste `HOST_UID` e `HOST_GID` no `.env` se seu usuário usar valores diferentes de `1000`.
 
-- cp .env.dev .env
+### E-mail e desenvolvimento front-end
 
-O `.env.dev` já vem configurado para os containers. Pontos de atenção:
-- `HOST_UID` e `HOST_GID` devem corresponder ao seu usuário (`id -u` e `id -g`), para que os arquivos criados pelos containers (como `vendor` e `node_modules`) pertençam a você. O padrão é `1000`.
-- Os e-mails (como os de recuperação de senha) são capturados pelo Mailpit em http://localhost:8025. Se preferir usar um SMTP externo, como o [Mailtrap.io](https://mailtrap.io/), altere as variáveis `MAIL_*`.
+O ambiente local registra os e-mails nos logs por padrão. Para capturá-los no Mailpit, defina `MAIL_MAILER=smtp` e `MAIL_HOST=mailpit` no `.env` e rode `docker compose --profile mail up -d`. A caixa local fica em http://localhost:8025. Em um deploy, configure `MAIL_*` para o seu servidor de e-mail.
 
-### 3) Subir os containers
-- docker compose up -d --build
+Para trabalhar nos assets com hot reload, rode `docker compose --profile dev up -d`. Para publicar mudanças nos assets compilados, rode `docker compose up -d --build`.
 
-Na primeira execução o container `app` instala as dependências do Composer, gera a `APP_KEY` e executa as migrations; o container `vite` instala as dependências do NPM. Isso pode levar alguns minutos. Acompanhe com:
+### Atualizar um ambiente que usava Redis
 
-- docker compose logs -f app vite
+Antes do `git pull`, suspenda as operações que geram jobs e deixe o worker antigo processar os jobs pendentes, reservados e agendados no Redis. Trate os jobs com falha que precisarão ser reenviados na stack antiga. Depois, rode `docker compose down` para desligar os serviços antigos e preservar o volume MySQL.
 
-Quando terminar, acesse o projeto em http://localhost:8000.
+Depois do `git pull`, remova `QUEUE_CONNECTION=redis`, as variáveis `REDIS_*` e `FORWARD_REDIS_PORT` do `.env`. Caso tenha configurado outros drivers Redis, use `CACHE_DRIVER=file`, `SESSION_DRIVER=file` e `BROADCAST_DRIVER=log`. Use `MAIL_MAILER=log` no ambiente local ou habilite o perfil Mailpit.
 
-### 4) Popular o banco (opcional)
-- docker compose exec app php artisan db:seed
+~~~bash
+docker compose up -d --build --remove-orphans
+~~~
 
-### Comandos Úteis
-Para parar os containers:
-- docker compose down
+Acrescente `--profile mail` ou `--profile dev` antes de `up` caso queira manter esses serviços opcionais em execução.
 
-Para executar comandos Artisan:
-- docker compose exec app php artisan <comando>
+### Comandos úteis
 
-Para executar comandos do Composer:
-- docker compose exec app composer <comando>
+~~~bash
+docker compose exec --user app app php artisan migrate:status
+docker compose exec --user app app php artisan db:seed
+docker compose exec --user app app php artisan test tests/Feature
+docker compose down
+~~~
 
-Para executar comandos do NPM:
-- docker compose exec vite npm <comando>
-
-Para executar os testes:
-- docker compose exec app php artisan test
-
-Para depurar com Xdebug, defina `XDEBUG_MODE=debug` no `.env` e recrie os containers com `docker compose up -d`. O Xdebug se conecta em `host.docker.internal:9003` quando a requisição tem o gatilho de debug (ex.: extensão Xdebug Helper no navegador).
-
-Para apagar também os dados do MySQL e do Redis:
-- docker compose down -v
+Para depurar com Xdebug, defina `XDEBUG_MODE=debug` no `.env` e recrie o container com `docker compose up -d`. O Xdebug se conecta em `host.docker.internal:9003` quando a requisição tem um gatilho de debug.
 
 ### Considerações Finais
 Sinta-se à vontade para adaptar o arquivo .env conforme suas necessidades, garantindo que todas as variáveis de ambiente estejam corretamente configuradas para o funcionamento do projeto.
