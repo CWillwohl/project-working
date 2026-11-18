@@ -7,6 +7,7 @@ use App\Models\{Project, WorkingPeriod};
 use Illuminate\View\View;
 use Livewire\Attributes\{On, Validate};
 use Livewire\{Component, WithPagination};
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManageReceivements extends Component
 {
@@ -66,13 +67,13 @@ class ManageReceivements extends Component
         ]);
     }
 
-    public function generatePdf()
+    public function generatePdf(): StreamedResponse
     {
-        $pdf = ((new PdfReport($this->selectedWorkedPeriods, $this->project))->handle());
+        $pdf = (new PdfReport($this->selectedWorkedPeriods, $this->project))->handle();
 
-        return response()->streamDownload(function() use ($pdf) {
-            echo $pdf->stream();
-        }, 'Relatório de Períodos de Trabalho.pdf');
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'Relatório de Períodos de Trabalho.pdf', ['Content-Type' => 'application/pdf']);
     }
 
     public function selectAllElements(): array
