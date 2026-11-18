@@ -22,18 +22,8 @@ class EstimateEarnings
         $start            = CarbonImmutable::parse($dateStart);
         $end              = CarbonImmutable::parse($dateEnd);
         $excludedWeekdays = $project->excluded_weekdays ?? [];
-        $calendarDays     = (int) $start->diffInDays($end) + 1;
-        $fullWeeks        = intdiv($calendarDays, 7);
-        $days             = $fullWeeks * (7 - count($excludedWeekdays));
-
-        // Full weeks contain every weekday once. Only the remainder needs checking.
-        for ($date = $start->addWeeks($fullWeeks); $date <= $end; $date = $date->addDay()) {
-            if (!in_array($date->dayOfWeekIso, $excludedWeekdays, true)) {
-                $days++;
-            }
-        }
-
-        $hours = $days * $hoursPerDay;
+        $days             = $this->countWorkingDays($start, $end, $excludedWeekdays);
+        $hours            = $days * $hoursPerDay;
 
         return [
             'project'          => $project->name,
@@ -46,5 +36,25 @@ class EstimateEarnings
             'hourlyRate'       => $project->formatted_price_per_hour,
             'total'            => 'R$ ' . $project->formatMoney((float) $project->price_per_hour * $hours),
         ];
+    }
+
+    private function countWorkingDays(CarbonImmutable $start, CarbonImmutable $end, array $excludedWeekdays): int
+    {
+        $calendarDays   = (int) $start->diffInDays($end) + 1;
+        $fullWeeks      = intdiv($calendarDays, 7);
+        $days           = $fullWeeks * (7 - count($excludedWeekdays));
+        $remainingStart = $start->addWeeks($fullWeeks);
+
+        if ($remainingStart > $end) {
+            return $days;
+        }
+
+        foreach ($remainingStart->daysUntil($end) as $date) {
+            if (!in_array($date->dayOfWeekIso, $excludedWeekdays, true)) {
+                $days++;
+            }
+        }
+
+        return $days;
     }
 }
