@@ -20,14 +20,17 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      vite:
+        condition: service_started
+      mailpit:
+        condition: service_started
 
   vite:
-    profiles: ["dev"]
     image: node:22-alpine
     working_dir: /var/www/html
     user: ${HOST_UID:-1000}:${HOST_GID:-1000}
     # Run the Vite binary directly so it receives SIGTERM and removes public/hot on shutdown
-    command: sh -c "npm install && exec node_modules/.bin/vite"
+    command: sh -c "npm ci && exec node_modules/.bin/vite"
     environment:
       HUSKY: 0
       VITE_PORT: ${VITE_PORT:-5173}
@@ -59,7 +62,6 @@ services:
       start_period: 30s
 
   mailpit:
-    profiles: ["mail"]
     image: axllent/mailpit:latest
     ports:
       - ${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025
