@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
 use Illuminate\Database\Eloquent\{Builder, Collection, Model};
@@ -22,6 +21,7 @@ class Project extends Model
     protected $casts = [
         'price_to_receive' => 'float',
         'total_received'   => 'float',
+        'excluded_weekdays' => 'array',
     ];
 
     public function user(): BelongsTo
@@ -36,16 +36,6 @@ class Project extends Model
                 ->when($data['search'] ?? null, function ($query, $search) {
                     $query->where('name', 'like', '%' . $search . '%');
                 });
-    }
-
-    public function calculateEarnings(
-        string $dateStart = null,
-        string $dateEnd = null,
-        int $timeWorked = 8
-    ): string {
-        $daysWorked = Carbon::parse($dateStart)->diffInDays(Carbon::parse($dateEnd)) + 1;
-
-        return 'R$ ' . $this->formatMoney(floatval($this->price_per_hour) * ($daysWorked * $timeWorked));
     }
 
     public function clockPunchs(): HasMany
@@ -64,15 +54,6 @@ class Project extends Model
             ->orderBy('created_at', 'desc')
             ->limit(6)
             ->get();
-    }
-
-    public function calculateEstimatedValues(int $timeWorked = 8): array
-    {
-        return [
-            'Day'     => 'R$ ' . $this->formatMoney(floatval($this->price_per_hour) * (1 * $timeWorked)),
-            '15Days'  => 'R$ ' . $this->formatMoney(floatval($this->price_per_hour) * (15 * $timeWorked)),
-            'Monthly' => 'R$ ' . $this->formatMoney(floatval($this->price_per_hour) * (30 * $timeWorked)),
-        ];
     }
 
     public function updateReceivedAndPendingValues(array $elements, string $typeModal): bool
