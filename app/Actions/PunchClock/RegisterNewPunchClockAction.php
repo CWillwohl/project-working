@@ -2,8 +2,10 @@
 
 namespace App\Actions\PunchClock;
 
+use App\Actions\WorkingPeriod\RecordPunchAction;
 use App\Models\{Project, PunchClock};
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class RegisterNewPunchClockAction
 {
@@ -14,32 +16,26 @@ class RegisterNewPunchClockAction
 
     public function execute(): void
     {
-        $user = auth()->user();
-
+        $user           = auth()->user();
         $actualDateTime = Carbon::now()->setTimezone('America/Sao_Paulo')->format('Y-m-d H:i:00');
 
-        $lastRegister = PunchClock::query()
-            ->whereUserId($user->id)
-            ->whereProjectId($this->project->id)
-            ->latest()
-            ->first();
+        DB::transaction(function () use ($user, $actualDateTime) {
+            $project = $user->projects()->lockForUpdate()->findOrFail($this->project->id);
 
-        if (!$lastRegister || $lastRegister->punch_type == 1) {
-            PunchClock::query()->create([
+            $lastRegister = PunchClock::query()
+                ->whereUserId($user->id)
+                ->whereProjectId($project->id)
+                ->latest('id')
+                ->first();
+
+            $punchClock = PunchClock::query()->create([
                 'user_id'    => $user->id,
-                'project_id' => $this->project->id,
+                'project_id' => $project->id,
                 'punch_time' => $actualDateTime,
-                'punch_type' => 0,
+                'punch_type' => $lastRegister?->punch_type === 0 ? 1 : 0,
             ]);
 
-            return;
-        }
-
-        PunchClock::query()->create([
-            'user_id'    => $user->id,
-            'project_id' => $this->project->id,
-            'punch_time' => $actualDateTime,
-            'punch_type' => 1,
-        ]);
+            (new RecordPunchAction())->execute($punchClock);
+        }, 3);
     }
 }

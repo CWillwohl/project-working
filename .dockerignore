@@ -1,3 +1,14 @@
-# The image only needs the PHP config files, the application code is bind-mounted
 *
+!docker/
+!docker/apache/
+!docker/apache/working.conf
 !docker/php/
+!docker/php/php.ini
+!docker/php/entrypoint.sh
+!package.json
+!package-lock.json
+!vite.config.js
+!tailwind.config.js
+!postcss.config.js
+!resources/
+!resources/**

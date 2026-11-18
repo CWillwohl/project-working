@@ -2,8 +2,9 @@
 
 namespace App\Actions\Auth;
 
-use App\Jobs\SendPasswordRecoveryEmailToken;
+use App\Mail\PasswordRecoveryToken;
 use App\Models\{PasswordResetToken, User};
+use Illuminate\Support\Facades\Mail;
 
 class SendPasswordRecoveryMailAction
 {
@@ -17,6 +18,6 @@ class SendPasswordRecoveryMailAction
         $user  = User::where('email', $this->email)->first()->name;
         $token = PasswordResetToken::createToken($this->email)->token;
 
-        SendPasswordRecoveryEmailToken::dispatch($this->email, $user, $token);
+        Mail::to($this->email)->send(new PasswordRecoveryToken($token, $user));
     }
 }
