@@ -2,94 +2,141 @@
 
 namespace App\Livewire\Reports\Projects;
 
+use App\Actions\Project\EstimateEarnings as CalculateEstimate;
 use App\Models\Project;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
-use Livewire\Attributes\Validate;
+use Illuminate\Support\Facades\Validator;
+use Livewire\Attributes\{Computed, Locked};
 use Livewire\Component;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EstimateEarnings extends Component
 {
-    public ?Project $project;
+    #[Locked]
+    public ?Project $project = null;
 
-    #[Validate('required|date|before_or_equal:dateEnd', as: 'data inicial')]
     public ?string $dateStart = null;
 
-    #[Validate('required|date', as: 'data final')]
     public ?string $dateEnd = null;
 
-    public ?string $totalEarnings = 'R$ 0,00';
+    #[Locked]
+    public int $timeWorked = 0;
 
-    public ?int $timeWorked = 0;
+    public array $excludedWeekdays = [];
 
-    public ?array $estimatedValues = [];
-
-    public function mount(Project $project)
-    {
-        $this->project = $project;
-    }
+    #[Locked]
+    public bool $weekdaysSaved = false;
 
     public function selectProject(Project $project): void
     {
-        $this->project = $project;
+        $this->authorize('update', $project);
 
-        $this->updateEarnings();
-        $this->calculateEstimatedValues();
+        $this->project          = $project;
+        $this->excludedWeekdays = $project->excluded_weekdays ?? [];
+        $this->weekdaysSaved    = false;
+        $this->resetValidation();
     }
 
-    public function calculateEarnings(): void
+    public function updatedExcludedWeekdays(): void
     {
-        $this->validate();
+        $this->weekdaysSaved = false;
+    }
 
-        $this->updateEarnings();
+    public function toggleWeekends(): void
+    {
+        $weekend                = [6, 7];
+        $this->excludedWeekdays = array_diff($weekend, $this->excludedWeekdays) === []
+            ? array_values(array_diff($this->excludedWeekdays, $weekend))
+            : array_values(array_unique(array_merge($this->excludedWeekdays, $weekend)));
+        $this->weekdaysSaved = false;
+    }
+
+    public function saveWeekdays(): void
+    {
+        abort_unless($this->project, 404);
+        $this->authorize('update', $this->project);
+
+        $validated = $this->validate([
+            'excludedWeekdays'   => ['array', 'max:7'],
+            'excludedWeekdays.*' => ['required', 'integer', 'between:1,7', 'distinct'],
+        ], [], [
+            'excludedWeekdays'   => 'dias excluídos',
+            'excludedWeekdays.*' => 'dia excluído',
+        ]);
+
+        $this->excludedWeekdays = array_map('intval', array_values($validated['excludedWeekdays']));
+        sort($this->excludedWeekdays);
+
+        $this->project->excluded_weekdays = $this->excludedWeekdays;
+        $this->project->save();
+
+        $this->weekdaysSaved = true;
+        unset($this->estimate);
     }
 
     public function incrementTimeWorked(): void
     {
-        if($this->timeWorked == 24) {
-            return;
-        }
-
-        $this->timeWorked++;
-
-        $this->updateEarnings();
-        $this->calculateEstimatedValues();
+        $this->timeWorked = min(24, $this->timeWorked + 1);
     }
 
-    public function decrementTimeWorked()
+    public function decrementTimeWorked(): void
     {
-        if($this->timeWorked == 0) {
-            return;
-        }
-        $this->timeWorked--;
+        $this->timeWorked = max(0, $this->timeWorked - 1);
+    }
 
-        $this->updateEarnings();
-        $this->calculateEstimatedValues();
+    #[Computed]
+    public function estimate(): ?array
+    {
+        if (!$this->project || $this->periodValidator()->fails()) {
+            return null;
+        }
+
+        return (new CalculateEstimate())->handle($this->project, $this->dateStart, $this->dateEnd, $this->timeWorked);
+    }
+
+    public function generatePdf(): StreamedResponse
+    {
+        abort_unless($this->project, 404);
+        $this->authorize('update', $this->project);
+        $this->periodValidator()->validate();
+
+        $pdf = Pdf::loadView('pdf.project-earnings-estimate', ['estimate' => $this->estimate])
+            ->setPaper('a4', 'portrait');
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'estimativa-de-ganhos.pdf', ['Content-Type' => 'application/pdf']);
     }
 
     public function render(): View
     {
         /** @var \App\Models\User $user */
-        $user     = auth()->user();
-        $projects = $user->projects()->get();
+        $user = auth()->user();
 
         return view('livewire.reports.projects.estimate-earnings', [
-            'projects' => $projects,
+            'projects'         => $user->projects()->get(),
+            'estimate'         => $this->estimate,
+            'weekdays'         => CalculateEstimate::WEEKDAYS,
+            'savedWeekdays'    => array_intersect_key(CalculateEstimate::WEEKDAYS, array_flip($this->project?->excluded_weekdays ?? [])),
+            'weekendsExcluded' => array_diff([6, 7], $this->excludedWeekdays) === [],
+            'periodErrors'     => $this->dateStart && $this->dateEnd ? $this->periodValidator()->errors() : null,
         ])->layout('components.app-layout', ['title' => 'Estimar Ganhos de Projetos']);
     }
 
-    private function updateEarnings(): void
+    private function periodValidator(): \Illuminate\Contracts\Validation\Validator
     {
-        $this->totalEarnings = $this->project->calculateEarnings(
-            dateStart: $this->dateStart,
-            dateEnd: $this->dateEnd,
-            timeWorked: $this->timeWorked
-        );
-    }
-
-    private function calculateEstimatedValues(): void
-    {
-        $this->estimatedValues = $this->project->calculateEstimatedValues(
-            timeWorked: $this->timeWorked
-        );
+        return Validator::make([
+            'dateStart' => $this->dateStart,
+            'dateEnd'   => $this->dateEnd,
+        ], [
+            'dateStart' => ['required', 'date_format:Y-m-d'],
+            'dateEnd'   => ['required', 'date_format:Y-m-d', 'after_or_equal:dateStart'],
+        ], [
+            'dateEnd.after_or_equal' => 'A data final deve ser igual ou posterior à data inicial.',
+        ], [
+            'dateStart' => 'data inicial',
+            'dateEnd'   => 'data final',
+        ]);
     }
 }

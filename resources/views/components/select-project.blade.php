@@ -2,7 +2,7 @@
     'projects' => [],
     'project' => null,
 ])
-@if($projects)
+@if(count($projects) > 0)
 <div class="w-full overflow-x-auto font-medium text-white collapse bg-primary">
     <input type="checkbox" />
     <div class="text-lg collapse-title">
@@ -10,7 +10,7 @@
     </div>
     <div class="flex flex-col md:grid gap-4 xl:grid-cols-3 collapse-content max-h-[12em] overflow-y-auto">
         @foreach ($projects as $item)
-            <button wire:click="selectProject({{ $item }})" class="h-auto p-2 m-2 bg-white btn text-primary">
+            <button wire:click="selectProject({{ $item->getKey() }})" class="h-auto p-2 m-2 bg-white btn text-primary">
                 {{ $item->name }}
             </button>
         @endforeach
