@@ -1,5 +1,5 @@
 <div class="flex flex-col items-center justify-center w-full">
-    <div class="flex flex-col justify-between w-full gap-4 md:flex-row">
+    <div class="flex flex-col justify-between w-full gap-4 md:flex-row md:items-start">
         <div class="flex flex-col justify-around w-full p-4 bg-white rounded-lg shadow-lg md:w-1/2">
             <x-select-project :projects="$projects" :project="$project" />
             @if($project)
@@ -59,7 +59,7 @@
                     </div>
                 </div>
 
-                <details class="p-4 mt-4 border border-zinc-200 rounded-lg" wire:key="weekdays-{{ $project->id }}">
+                <details class="p-4 mt-4 border border-zinc-200 rounded-lg" wire:key="weekdays-{{ $project->id }}" wire:ignore.self>
                     <summary class="font-medium cursor-pointer">
                         Configurar dias de trabalho
                         <span class="block mt-2 text-sm font-normal text-slate-600">
