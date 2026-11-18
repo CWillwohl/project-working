@@ -12,3 +12,9 @@
 
 - Pest com SQLite em memória, 5 testes e 24 asserções.
 - Build dos assets com `npm run build`.
+
+## Ajustes de interface
+
+- [x] Alinhar os cards pelo topo para preservar a altura do seletor de projetos.
+- [x] Manter a configuração aberta ao marcar dias, usar o atalho de fim de semana ou salvar.
+- [x] Verificar os dois ajustes no Chrome, rodar os cinco testes de integração e gerar o build dos assets.
