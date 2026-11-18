@@ -25,26 +25,51 @@ Não é necessário ter PHP, Composer ou Node instalados na máquina: tudo roda 
 
 O Docker usa Node para compilar os assets durante o build da imagem e executar o Vite com hot reload durante o desenvolvimento. O registro de ponto, o cálculo do período, a atualização do saldo e a recuperação de senha são executados durante a requisição.
 
-## Instalação
+## Instalação local
+
+### 1. Confira o Docker
+
+Com o Docker em execução, confirme que o plugin Compose está disponível.
 
 ~~~bash
-git clone https://github.com/CWillwohl/project-working
-cd project-working
-cp .env.dev .env
-docker compose up -d --build
+docker compose version
 ~~~
 
-Acesse http://localhost:8000 quando o container `app` concluir a instalação das dependências PHP, a geração da chave e as migrations. Use `docker compose logs -f app vite` para acompanhar. Ajuste `HOST_UID` e `HOST_GID` no `.env` se seu usuário usar valores diferentes de `1000`.
+### 2. Clone o projeto e prepare o ambiente
 
-### E-mail e desenvolvimento front-end
+~~~bash
+git clone https://github.com/CWillwohl/project-working.git
+cd project-working
+cp .env.dev .env
+~~~
 
-O Compose sobe Vite e Mailpit junto com a aplicação. O `.env.dev` envia os e-mails locais para o Mailpit via SMTP, e a caixa fica em http://localhost:8025. Em um deploy, configure `MAIL_*` para o seu servidor de e-mail.
+O `.env.dev` configura o Laravel para acessar `mysql:3306` e enviar e-mails locais para `mailpit:1025`. No Linux, confira seu UID e GID com `id -u` e `id -g`. Se os valores forem diferentes de `1000`, ajuste `HOST_UID` e `HOST_GID` no `.env` para que os containers possam gravar na pasta do projeto.
+
+Se alguma porta já estiver ocupada, ajuste `APP_PORT`, `VITE_PORT`, `FORWARD_DB_PORT` ou `FORWARD_MAILPIT_DASHBOARD_PORT` no `.env`. Se mudar `APP_PORT`, atualize também `APP_URL`. As portas internas do MySQL e do SMTP continuam sendo `3306` e `1025`.
+
+### 3. Suba os quatro serviços
+
+~~~bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f app vite
+~~~
+
+Na primeira inicialização, o serviço `app` instala as dependências PHP, gera a chave da aplicação e aplica as migrations. O serviço `vite` instala as dependências JavaScript e inicia o hot reload. Aguarde os dois concluírem a inicialização e use `Ctrl+C` para sair dos logs.
+
+### 4. Abra a aplicação
+
+- Acesse http://localhost:8000 para criar uma conta ou entrar.
+- Para testar o hot reload, mantenha a aplicação aberta e edite um arquivo em `resources/css`, `resources/js` ou uma view em `resources/views`. O Vite recarrega os assets ou atualiza a página conforme a alteração.
+- Para testar a recuperação de senha, solicite o e-mail na aplicação e abra http://localhost:8025 para ver a mensagem no Mailpit.
+
+Para um deploy que envia e-mails reais, configure as variáveis `MAIL_*` para o seu servidor SMTP.
 
 ### Atualizar um ambiente que usava Redis
 
 Antes do `git pull`, suspenda as operações que geram jobs e deixe o worker antigo processar os jobs pendentes, reservados e agendados no Redis. Trate os jobs com falha que precisarão ser reenviados na stack antiga. Depois, rode `docker compose down` para desligar os serviços antigos e preservar o volume MySQL.
 
-Depois do `git pull`, remova `QUEUE_CONNECTION=redis`, as variáveis `REDIS_*` e `FORWARD_REDIS_PORT` do `.env`. Caso tenha configurado outros drivers Redis, use `CACHE_DRIVER=file`, `SESSION_DRIVER=file` e `BROADCAST_DRIVER=log`. Para usar o Mailpit local, configure `MAIL_MAILER=smtp`, `MAIL_HOST=mailpit` e `MAIL_PORT=1025`.
+Depois do `git pull`, edite o `.env` existente para preservar a chave da aplicação e as credenciais do MySQL. Remova `QUEUE_CONNECTION=redis`, as variáveis `REDIS_*` e `FORWARD_REDIS_PORT` do `.env`. Caso tenha configurado outros drivers Redis, use `CACHE_DRIVER=file`, `SESSION_DRIVER=file` e `BROADCAST_DRIVER=log`. Para usar o Mailpit local, configure `MAIL_MAILER=smtp`, `MAIL_HOST=mailpit` e `MAIL_PORT=1025`.
 
 ~~~bash
 docker compose up -d --build --remove-orphans
