@@ -6,6 +6,7 @@ use App\Livewire\Projects\Index as ProjectIndex;
 use App\Http\Controllers\Report\WorkedPeriodsPDF;
 use App\Livewire\Auth\{Login, PasswordRecover, Register};
 use App\Livewire\PunchClock\{Register as PunchClockRegister};
+use App\Livewire\PunchClock\Periods;
 use App\Livewire\Reports\Projects\{EstimateEarnings, ManageReceivements};
 
 /*
@@ -47,6 +48,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('ponto-digital')->group(function () {
         Route::get('/registrar-ponto', PunchClockRegister::class)->name('punch-clock.register');
+        Route::get('/periodos-trabalhados', Periods::class)->name('punch-clock.periods');
     });
 
     Route::prefix('usuarios')->group(function () {

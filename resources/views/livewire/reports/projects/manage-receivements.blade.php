@@ -1,85 +1,56 @@
-<div class="flex items-center justify-center w-full">
-    <div class="flex flex-col justify-between w-full p-4 bg-white rounded-lg">
-        <div class="flex flex-col w-full min-h-[900px] md:min-h-[700px] p-4 overflow-x-auto md:overflow-hidden">
+<div class="w-full">
+    <div class="w-full p-4 bg-white rounded-lg shadow-lg md:p-6">
+        <x-select-project :projects="$projects" :project="$project" />
 
-            <x-select-project :projects="$projects" :project="$project" />
-
-            <div class="flex flex-col justify-between w-full gap-4 mt-8 xl:flex-row">
-                <div class="flex flex-wrap items-center gap-2">
-                    <livewire:reports.projects.components.manage-receivements-filter />
-                    <button type="button" wire:click="filterStatus(0)" aria-pressed="{{ $received === 0 ? 'true' : 'false' }}" class="btn {{ $received === 0 ? 'btn-primary' : 'btn-outline' }}">Pendente</button>
-                    <button type="button" wire:click="filterStatus(1)" aria-pressed="{{ $received === 1 ? 'true' : 'false' }}" class="btn {{ $received === 1 ? 'btn-primary' : 'btn-outline' }}">Recebido</button>
-                </div>
-                <x-manage-receivements-options />
+        <div class="flex flex-col justify-between gap-4 mt-6 xl:flex-row">
+            <div class="flex flex-wrap items-center gap-2">
+                <livewire:reports.projects.components.manage-receivements-filter />
+                <button type="button" wire:click="filterStatus(0)" aria-pressed="{{ $received === 0 ? 'true' : 'false' }}" class="btn {{ $received === 0 ? 'btn-primary' : 'btn-outline' }}">Pendente</button>
+                <button type="button" wire:click="filterStatus(1)" aria-pressed="{{ $received === 1 ? 'true' : 'false' }}" class="btn {{ $received === 1 ? 'btn-primary' : 'btn-outline' }}">Recebido</button>
             </div>
-            <form action="" wire:submit.prevent>
-                <table class="w-full mt-4 table-auto">
-                    <thead class="text-left border border-x bg-slate-100 border-slate-200">
-                        <th class="gap-2 p-4 rounded-t">
-                            <input wire:model="selectAll" type="checkbox" class="checkbox checkbox-primary" wire:change="selectAllElements" />
-                        </th>
-                        <th class="p-4">HORARIO DE ENTRADA</th>
-                        <th class="p-4">HORARIO DE SAIDA</th>
-                        <th class="p-4">TEMPO TRABALHADO</th>
-                        <th class="p-4 rounded-t">VALOR A RECEBER</th>
-                        <th class="p-4 rounded-t">STATUS</th>
-                        <th class="p-4 rounded-t">DESCRIÇÃO</th>
-                    </thead>
-                    <tbody class="border text-zinc-600">
-                        @forelse ($workedPeriods as $index => $item)
-                            <tr wire:key="{{ $item->id }}" class="border-b @if($index % 2 !== 0) bg-slate-50 @endif">
-                                <td class="p-4 text-base">
-                                    @if($item->punch_out_id)
-                                        <input wire:model="selectedWorkedPeriods" type="checkbox" class="checkbox checkbox-primary worked-period-element" value="{{ $item->id }}" />
-                                    @else
-                                        <div class="tooltip tooltip-right" data-tip="Não é possivel selecionar um periodo que ainda não foi completado">
-                                            <i class="text-2xl text-center fa-solid fa-circle-info text-info"></i>
-                                        </div>
-                                    @endif
-                                </td>
-                                <td class="p-4 text-base">
-                                    <div class="p-2 text-sm font-medium text-center text-white rounded-full shadow-lg w-44 bg-gradient-to-r from-sky-700 to-sky-500">
-                                        {{ date('d/m/Y H:i', strtotime($item->punch_in_time)) }}
-                                    </div>
-                                </td>
-                                <td class="p-4 text-base">
-                                    <div class="p-2 text-sm font-medium text-center text-white rounded-full shadow-lg w-44 bg-gradient-to-r from-sky-900 to-sky-700">
-                                        {{ $item->punch_out_time ? date('d/m/Y H:i', strtotime($item->punch_out_time)) : 'Sem registro' }}
-                                    </div>
-                                </td>
-                                <td class="p-4 text-base">
-                                    {{ $item->time_worked }}
-                                </td>
-                                <td class="p-4 text-base">{{ $item->formatted_value_to_receive }}</td>
-                                <td class="p-4 text-base">
-                                    @if(!$item->received)
-                                        <div class="p-2 text-sm font-medium text-center text-white rounded-full shadow-lg w-44 bg-gradient-to-r from-green-700 to-green-500">
-                                            {{ $item->status_received_description }}
-                                        </div>
-                                    @else
-                                        <div class="p-2 text-sm font-medium text-center text-white rounded-full shadow-lg w-44 bg-gradient-to-r from-sky-700 to-sky-500">
-                                            {{ $item->status_received_description }}
-                                        </div>
-                                    @endif
-                                </td>
-                                <td class="p-4 text-base">
-                                    <livewire:punch-clock.working-period-description wire:key="description-{{ $item->id }}" :workingPeriod="$item" />
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="p-4">Nenhum registro realizado até o momento</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </form>
+            <x-manage-receivements-options />
         </div>
-        <div class="flex flex-col items-center justify-between w-full gap-4 mt-8 md:flex-row">
-            <span class="text-sm md:text-md">Total de registros: <span class="font-medium ">{{ $workedPeriods->total() }}</span></span>
+
+        <div class="mt-6 overflow-x-auto border rounded-lg border-slate-200">
+            <table class="w-full text-sm text-left whitespace-nowrap">
+                <thead class="text-xs font-semibold uppercase bg-slate-100 text-slate-600">
+                    <tr>
+                        <th scope="col" class="px-4 py-4"><input wire:model="selectAll" type="checkbox" class="checkbox checkbox-primary checkbox-sm" wire:change="selectAllElements" aria-label="Selecionar todos os períodos" /></th>
+                        <th scope="col" class="px-4 py-4">Entrada</th>
+                        <th scope="col" class="px-4 py-4">Saída</th>
+                        <th scope="col" class="px-4 py-4">Tempo trabalhado</th>
+                        <th scope="col" class="px-4 py-4">Valor</th>
+                        <th scope="col" class="px-4 py-4">Status</th>
+                        <th scope="col" class="px-4 py-4">Descrição</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">
+                    @forelse ($workedPeriods as $item)
+                        <tr wire:key="{{ $item->id }}" class="transition-colors hover:bg-slate-50">
+                            <td class="px-4 py-4">
+                                @if($item->punch_out_id)
+                                    <input wire:model="selectedWorkedPeriods" type="checkbox" class="checkbox checkbox-primary checkbox-sm worked-period-element" value="{{ $item->id }}" aria-label="Selecionar período {{ $item->id }}" />
+                                @else
+                                    <span class="tooltip tooltip-right" data-tip="Não é possível selecionar um período que ainda não foi completado"><i class="fa-solid fa-circle-info text-info" aria-label="Período em aberto"></i></span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-4 font-medium">{{ date('d/m/Y H:i', strtotime($item->punch_in_time)) }}</td>
+                            <td class="px-4 py-4">{{ $item->punch_out_time ? date('d/m/Y H:i', strtotime($item->punch_out_time)) : 'Sem registro' }}</td>
+                            <td class="px-4 py-4">{{ $item->time_worked }}</td>
+                            <td class="px-4 py-4 font-medium">{{ $item->formatted_value_to_receive }}</td>
+                            <td class="px-4 py-4"><span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full {{ $item->received ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800' }}">{{ $item->status_received_description }}</span></td>
+                            <td class="px-4 py-4"><livewire:punch-clock.working-period-description wire:key="description-{{ $item->id }}" :workingPeriod="$item" /></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">Nenhum registro encontrado.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="flex flex-col items-center justify-between gap-4 mt-6 md:flex-row">
+            <span class="text-sm">Total de registros: <span class="font-medium">{{ $workedPeriods->total() }}</span></span>
             {{ $workedPeriods->links('livewire.custom.pagination') }}
         </div>
     </div>
-
     <livewire:reports.projects.components.update-receveid-and-pedings-values-modal />
 </div>

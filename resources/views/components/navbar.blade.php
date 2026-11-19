@@ -26,6 +26,7 @@
                 </summary>
                 <ul class="p-2 font-normal text-black w-52">
                   <li><a href="{{ route('punch-clock.register') }}" class="flex flex-row justify-between w-full">Registrar ponto</a></li>
+                  <li><a href="{{ route('punch-clock.periods') }}">Períodos trabalhados</a></li>
                 </ul>
               </details>
           </li>
@@ -61,6 +62,7 @@
               </summary>
               <ul class="absolute z-50 w-64 p-2 font-normal text-black">
                 <li><a href="{{ route('punch-clock.register') }}" class="flex flex-row justify-between w-full">Registrar ponto</a></li>
+                <li><a href="{{ route('punch-clock.periods') }}">Períodos trabalhados</a></li>
               </ul>
             </details>
         </li>

@@ -5,6 +5,7 @@ namespace App\Livewire\PunchClock;
 use App\Actions\PunchClock\RegisterNewPunchClockAction;
 use App\Models\{Project, PunchClock, WorkingPeriod};
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class Register extends Component
 {
@@ -17,8 +18,11 @@ class Register extends Component
 
     public function selectProject(Project $project)
     {
-        $this->project = $project;
+        $this->project = auth()->user()->projects()->findOrFail($project->id);
     }
+
+    #[On('punch-clock::updated')]
+    public function refreshRegisters(): void {}
 
     public function render()
     {
